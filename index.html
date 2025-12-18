@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+</head>
+<body>
+
+Riferimento NISECI:
+<input type="file" id="rif_niseci">
+</br>
+Campionamento NISECI:
+<input type="file" id="camp_niseci">
+</br>
+Anagrafica NISECI:
+<input type="file" id="anag_niseci">
+</br>
+<button id="run_niseci">Run</button>
+</br>
+<pre id="out_niseci"></pre>
+
+Campionamento HFBI:
+<input type="file" id="camp_hfbi">
+</br>
+Anagrafica HFBI:
+<input type="file" id="anag_hfbi">
+</br>
+<button id="run_hfbi">Run</button>
+</br>
+<pre id="out_hfbi"></pre>
+
+<script type="module">
+  import init, { calc_niseci_italian, calc_hfbi_italian } from "./pkg/esox_wasm.js";
+
+  await init(); // load .wasm
+
+  const out_niseci = document.getElementById("out_niseci");
+  const out_hfbi = document.getElementById("out_hfbi");
+  const is_italian = true;
+  const has_headers = true;
+
+  async function readFile(input) {
+    if (!input.files || input.files.length === 0) return null;
+    return await input.files[0].text();
+  }
+
+  document.getElementById("run_niseci").onclick = async () => {
+    const t1 = await readFile(document.getElementById("rif_niseci"));
+    const t2 = await readFile(document.getElementById("camp_niseci"));
+    const t3 = await readFile(document.getElementById("anag_niseci"));
+
+    if (!t1 || !t2 || !t3) {
+      out_niseci.textContent = "Please select all three files";
+      return;
+    }
+
+    try {
+        const result = calc_niseci_italian(t1, t2, t3, is_italian, has_headers);
+        out_niseci.textContent =
+          result === undefined
+            ? "Calculation failed"
+            : `Result: ${result}`;
+    } catch (errors) {
+        console.error(errors);
+    }
+
+  };
+  document.getElementById("run_hfbi").onclick = async () => {
+    const t1 = await readFile(document.getElementById("camp_hfbi"));
+    const t2 = await readFile(document.getElementById("anag_hfbi"));
+
+    if (!t1 || !t2 ) {
+      out_hfbi.textContent = "Please select both files";
+      return;
+    }
+
+    try {
+        const result = calc_hfbi_italian(t1, t2, is_italian, has_headers);
+
+        out_hfbi.textContent =
+          result === undefined
+            ? "Calculation failed"
+            : `Result: ${result}`;
+    } catch (errors) {
+        console.error(errors);
+    }
+  };
+</script>
+
+</body>
+</html>
