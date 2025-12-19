@@ -15,10 +15,10 @@ use esox::csv::parser::niseci::{
     check_records_anagrafica_niseci, check_records_campionamento_niseci,
     check_records_riferimento_niseci,
 };
-use esox::domain::hfbi::{AnagraficaHFBI, CampionamentoHFBI};
-use esox::domain::niseci::{AnagraficaNISECI, CampionamentoNISECI, RiferimentoNISECI};
+use esox::domain::hfbi::{AnagraficaHFBI, CampionamentoHFBI, RisultatoHFBI};
+use esox::domain::niseci::{AnagraficaNISECI, CampionamentoNISECI, RiferimentoNISECI, RisultatoNISECI};
 use esox::engines::hfbi::full::calculate_hfbi;
-use esox::engines::niseci::full::calculate_niseci;
+use esox::engines::niseci::full::{calculate_niseci, calculate_rqe_niseci};
 use std::io::Cursor;
 use wasm_bindgen::prelude::*;
 
@@ -29,7 +29,7 @@ pub fn calc_niseci_italian(
     anag_str: &str,
     is_italian: bool,
     has_headers: bool,
-) -> Result<Option<f32>, Vec<String>> {
+) -> Result<JsValue, Vec<String>> {
     let rif_reader = Cursor::new(rif_str.as_bytes());
     let checked_rif_vec;
     if is_italian {
@@ -146,7 +146,18 @@ pub fn calc_niseci_italian(
     let campionamento = CampionamentoNISECI::new(checked_camp_vec);
     let anagrafica: AnagraficaNISECI = checked_anag;
     match calculate_niseci(&campionamento, &riferimento, &anagrafica) {
-        Ok(v) => Ok(v.0),
+        Ok(v) => {
+            let rqe = calculate_rqe_niseci(v.0);
+            let res = RisultatoNISECI::new(
+                v.0,
+                rqe,
+                v.1
+            );
+            match serde_wasm_bindgen::to_value(&res) {
+                Ok(v) => Ok(v),
+                Err(_) => Err(vec!["serde fail".to_string()]),
+            }
+        }
         Err(ev) => {
             return Err(ev);
         }
@@ -159,7 +170,7 @@ pub fn calc_hfbi_italian(
     anag_str: &str,
     is_italian: bool,
     has_headers: bool,
-) -> Result<f32, Vec<String>> {
+) -> Result<JsValue, Vec<String>> {
     let camp_reader = Cursor::new(camp_str.as_bytes());
     let checked_camp_vec;
     if is_italian {
@@ -237,7 +248,16 @@ pub fn calc_hfbi_italian(
     let campionamento = CampionamentoHFBI::new(checked_camp_vec);
     let anagrafica: AnagraficaHFBI = checked_anag;
     match calculate_hfbi(&campionamento, &anagrafica) {
-        Ok(v) => Ok(v.0),
+        Ok(v) => {
+            let res = RisultatoHFBI::new(
+                Some(v.0),
+                v.1,
+            );
+            match serde_wasm_bindgen::to_value(&res) {
+                Ok(v) => Ok(v),
+                Err(_) => Err(vec!["serde fail".to_string()]),
+            }
+        }
         Err(e) => {
             return Err(vec![e]);
         }
