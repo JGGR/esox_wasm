@@ -58,7 +58,7 @@ Anagrafica HFBI:
         out_niseci.textContent =
           result === undefined
             ? "Calculation failed"
-            : `Result: ${result}`;
+            : `Result: ${result.valore}`;
     } catch (errors) {
         console.error(errors);
     }
@@ -79,7 +79,7 @@ Anagrafica HFBI:
         out_hfbi.textContent =
           result === undefined
             ? "Calculation failed"
-            : `Result: ${result}`;
+            : `Result: ${result.valore}`;
     } catch (errors) {
         console.error(errors);
     }

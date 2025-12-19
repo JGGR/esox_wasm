@@ -21,9 +21,7 @@ You can find templates for the input files in the `templates` folder.
 
 ## Locale <a name = "locale"></a>
 
-Since this library is built with knowing that Excel uses some specific separators with the Italian locale, it supports two formats for input/output depending on the platform locale.
-
-You can change the detected locale in the settings.
+Since this library is built with knowing that Excel uses some specific separators with the Italian locale, it supports two formats for input/output.
 
 The format differences are:
 - Italian:
