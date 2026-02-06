@@ -26,10 +26,8 @@ Since this library is built with knowing that Excel uses some specific separator
 The format differences are:
 - Italian:
   - Input expects `;` as csv field delimiter, and `,` can be used as float decimal delimiter
-  - Output uses `;` as csv field delimiter, and floats are printed with `,` as decimal delimiter
 - International:
   - Input expectes `,` as csv field delimiter, and `.` as float decimal delimiter
-  - Output uses `,` as csv field delimiter, and floats are printed with `.` as decimal delimiter
 
 ## Building <a name = "building"></a>
 
