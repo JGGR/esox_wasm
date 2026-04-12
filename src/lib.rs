@@ -16,10 +16,12 @@ use esox::csv::load::niseci::{
     load_riferimento_niseci_from_reader, AnagraficaNISECIError, CampionamentoNISECIError,
     RiferimentoNISECIError,
 };
-use esox::domain::hfbi::{AnagraficaHFBI, CampionamentoHFBI, RisultatoHFBI, ValoriIntermediHFBI};
+use esox::domain::hfbi::{
+    AnagraficaHFBI, CampionamentoHFBI, RisultatoHFBI, StatoEcologicoHFBI, ValoriIntermediHFBI,
+};
 use esox::domain::niseci::{
-    AnagraficaNISECI, CampionamentoNISECI, RiferimentoNISECI, RisultatoNISECI,
-    ValoriIntermediNISECI,
+    AnagraficaNISECI, AreaNISECI, CampionamentoNISECI, RiferimentoNISECI, RisultatoNISECI,
+    StatoEcologicoNISECI, ValoriIntermediNISECI,
 };
 use esox::engines::hfbi::full::calculate_hfbi;
 use esox::engines::niseci::full::{calculate_niseci, calculate_rqe_niseci};
@@ -149,7 +151,7 @@ pub fn calc_niseci_italian(
             }
         }
         Err(ev) => {
-            return Err(ev);
+            Err(ev)
         }
     }
 }
@@ -177,6 +179,19 @@ pub fn intermediates_niseci_to_csv(
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
 
     Ok(intermediates.to_csv(comma_csv_delimiter))
+}
+
+#[wasm_bindgen]
+pub fn res_niseci_to_stato_eco_str(res: JsValue, area: JsValue) -> Result<String, JsValue> {
+    let risultato: RisultatoNISECI =
+        serde_wasm_bindgen::from_value(res).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let area: AreaNISECI =
+        serde_wasm_bindgen::from_value(area).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(risultato
+        .get_valore()
+        .map(|v| StatoEcologicoNISECI::from((v, &area)))
+        .ok_or("NC")?
+        .to_string())
 }
 
 #[wasm_bindgen]
@@ -263,7 +278,7 @@ pub fn calc_hfbi_italian(
             }
         }
         Err(e) => {
-            return Err(vec![e]);
+            Err(vec![e])
         }
     }
 }
@@ -291,4 +306,15 @@ pub fn intermediates_hfbi_to_csv(
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
 
     Ok(intermediates.to_csv(comma_csv_delimiter))
+}
+
+#[wasm_bindgen]
+pub fn res_hfbi_to_stato_eco_str(res: JsValue) -> Result<String, JsValue> {
+    let risultato: RisultatoHFBI =
+        serde_wasm_bindgen::from_value(res).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(risultato
+        .get_valore()
+        .map(StatoEcologicoHFBI::from)
+        .ok_or("NC")?
+        .to_string())
 }
