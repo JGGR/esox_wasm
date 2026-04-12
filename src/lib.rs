@@ -1,25 +1,25 @@
+use esox::csv::deser::hfbi::{
+    PlainRecordCsvAnagraficaHFBI, PlainRecordCsvCampionamentoHFBI,
+    VeryItalianRecordCsvAnagraficaHFBI, VeryItalianRecordCsvCampionamentoHFBI,
+};
+use esox::csv::deser::niseci::{
+    PlainRecordCsvAnagraficaNISECI, PlainRecordCsvCampionamentoNISECI,
+    PlainRecordCsvRiferimentoNISECI, VeryItalianRecordCsvAnagraficaNISECI,
+    VeryItalianRecordCsvCampionamentoNISECI, VeryItalianRecordCsvRiferimentoNISECI,
+};
+use esox::csv::load::hfbi::{
+    load_anagrafica_hfbi_from_reader, load_campionamento_hfbi_from_reader, AnagraficaHFBIError,
+    CampionamentoHFBIError,
+};
 use esox::csv::load::niseci::{
     load_anagrafica_niseci_from_reader, load_campionamento_niseci_from_reader,
     load_riferimento_niseci_from_reader, AnagraficaNISECIError, CampionamentoNISECIError,
     RiferimentoNISECIError,
 };
-use esox::csv::load::hfbi::{
-    load_campionamento_hfbi_from_reader, load_anagrafica_hfbi_from_reader, CampionamentoHFBIError, AnagraficaHFBIError
-};
-use esox::csv::deser::hfbi::{
-    PlainRecordCsvAnagraficaHFBI,
-    PlainRecordCsvCampionamentoHFBI, VeryItalianRecordCsvAnagraficaHFBI,
-    VeryItalianRecordCsvCampionamentoHFBI,
-};
-use esox::csv::deser::niseci::{
-    PlainRecordCsvAnagraficaNISECI,
-    PlainRecordCsvCampionamentoNISECI, PlainRecordCsvRiferimentoNISECI,
-    VeryItalianRecordCsvAnagraficaNISECI, VeryItalianRecordCsvCampionamentoNISECI,
-    VeryItalianRecordCsvRiferimentoNISECI,
-};
-use esox::domain::hfbi::{AnagraficaHFBI, CampionamentoHFBI, RisultatoHFBI};
+use esox::domain::hfbi::{AnagraficaHFBI, CampionamentoHFBI, RisultatoHFBI, ValoriIntermediHFBI};
 use esox::domain::niseci::{
     AnagraficaNISECI, CampionamentoNISECI, RiferimentoNISECI, RisultatoNISECI,
+    ValoriIntermediNISECI,
 };
 use esox::engines::hfbi::full::calculate_hfbi;
 use esox::engines::niseci::full::{calculate_niseci, calculate_rqe_niseci};
@@ -155,6 +155,31 @@ pub fn calc_niseci_italian(
 }
 
 #[wasm_bindgen]
+pub fn res_niseci_to_csv(
+    res: JsValue,
+    anagrafica: JsValue,
+    comma_csv_delimiter: bool,
+) -> Result<String, JsValue> {
+    let anagrafica: AnagraficaNISECI = serde_wasm_bindgen::from_value(anagrafica)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let risultato: RisultatoNISECI =
+        serde_wasm_bindgen::from_value(res).map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+    Ok(risultato.to_csv(&anagrafica, comma_csv_delimiter))
+}
+
+#[wasm_bindgen]
+pub fn intermediates_niseci_to_csv(
+    intermediates: JsValue,
+    comma_csv_delimiter: bool,
+) -> Result<String, JsValue> {
+    let intermediates: ValoriIntermediNISECI = serde_wasm_bindgen::from_value(intermediates)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+    Ok(intermediates.to_csv(comma_csv_delimiter))
+}
+
+#[wasm_bindgen]
 pub fn calc_hfbi_italian(
     camp_str: &str,
     anag_str: &str,
@@ -169,16 +194,14 @@ pub fn calc_hfbi_italian(
             has_headers,
         ) {
             Ok(v) => camp_vec = v,
-            Err(ev) => {
-                match ev {
-                    CampionamentoHFBIError::Csv(errors) => {
-                        return Err(errors.into_iter().map(|e| e.to_string()).collect());
-                    }
-                    CampionamentoHFBIError::Value(errors) => {
-                        return Err(errors.into_iter().map(|e| e.to_string()).collect());
-                    }
+            Err(ev) => match ev {
+                CampionamentoHFBIError::Csv(errors) => {
+                    return Err(errors.into_iter().map(|e| e.to_string()).collect());
                 }
-            }
+                CampionamentoHFBIError::Value(errors) => {
+                    return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                }
+            },
         }
     } else {
         match load_campionamento_hfbi_from_reader::<_, PlainRecordCsvCampionamentoHFBI>(
@@ -186,16 +209,14 @@ pub fn calc_hfbi_italian(
             has_headers,
         ) {
             Ok(v) => camp_vec = v,
-            Err(ev) => {
-                match ev {
-                    CampionamentoHFBIError::Csv(errors) => {
-                        return Err(errors.into_iter().map(|e| e.to_string()).collect());
-                    }
-                    CampionamentoHFBIError::Value(errors) => {
-                        return Err(errors.into_iter().map(|e| e.to_string()).collect());
-                    }
+            Err(ev) => match ev {
+                CampionamentoHFBIError::Csv(errors) => {
+                    return Err(errors.into_iter().map(|e| e.to_string()).collect());
                 }
-            }
+                CampionamentoHFBIError::Value(errors) => {
+                    return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                }
+            },
         }
     }
     let anag_reader = Cursor::new(anag_str.as_bytes());
@@ -206,16 +227,14 @@ pub fn calc_hfbi_italian(
             has_headers,
         ) {
             Ok(v) => anag = v,
-            Err(ev) => {
-                match ev {
-                    AnagraficaHFBIError::Csv(errors) => {
-                        return Err(errors.into_iter().map(|e| e.to_string()).collect());
-                    }
-                    AnagraficaHFBIError::Value(errors) => {
-                        return Err(errors.into_iter().map(|e| e.to_string()).collect());
-                    }
+            Err(ev) => match ev {
+                AnagraficaHFBIError::Csv(errors) => {
+                    return Err(errors.into_iter().map(|e| e.to_string()).collect());
                 }
-            }
+                AnagraficaHFBIError::Value(errors) => {
+                    return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                }
+            },
         }
     } else {
         match load_anagrafica_hfbi_from_reader::<_, PlainRecordCsvAnagraficaHFBI>(
@@ -223,16 +242,14 @@ pub fn calc_hfbi_italian(
             has_headers,
         ) {
             Ok(v) => anag = v,
-            Err(ev) => {
-                match ev {
-                    AnagraficaHFBIError::Csv(errors) => {
-                        return Err(errors.into_iter().map(|e| e.to_string()).collect());
-                    }
-                    AnagraficaHFBIError::Value(errors) => {
-                        return Err(errors.into_iter().map(|e| e.to_string()).collect());
-                    }
+            Err(ev) => match ev {
+                AnagraficaHFBIError::Csv(errors) => {
+                    return Err(errors.into_iter().map(|e| e.to_string()).collect());
                 }
-            }
+                AnagraficaHFBIError::Value(errors) => {
+                    return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                }
+            },
         }
     }
     let campionamento = CampionamentoHFBI::new(camp_vec);
@@ -249,4 +266,29 @@ pub fn calc_hfbi_italian(
             return Err(vec![e]);
         }
     }
+}
+
+#[wasm_bindgen]
+pub fn res_hfbi_to_csv(
+    res: JsValue,
+    anagrafica: JsValue,
+    comma_csv_delimiter: bool,
+) -> Result<String, JsValue> {
+    let anagrafica: AnagraficaHFBI = serde_wasm_bindgen::from_value(anagrafica)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let risultato: RisultatoHFBI =
+        serde_wasm_bindgen::from_value(res).map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+    Ok(risultato.to_csv(&anagrafica, comma_csv_delimiter))
+}
+
+#[wasm_bindgen]
+pub fn intermediates_hfbi_to_csv(
+    intermediates: JsValue,
+    comma_csv_delimiter: bool,
+) -> Result<String, JsValue> {
+    let intermediates: ValoriIntermediHFBI = serde_wasm_bindgen::from_value(intermediates)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+    Ok(intermediates.to_csv(comma_csv_delimiter))
 }
