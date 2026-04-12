@@ -1,22 +1,26 @@
+use esox::csv::load::niseci::{
+    load_anagrafica_niseci_from_reader, load_campionamento_niseci_from_reader,
+    load_riferimento_niseci_from_reader, AnagraficaNISECIError, CampionamentoNISECIError,
+    RiferimentoNISECIError,
+};
+use esox::csv::load::hfbi::{
+    load_campionamento_hfbi_from_reader, load_anagrafica_hfbi_from_reader, CampionamentoHFBIError, AnagraficaHFBIError
+};
 use esox::csv::deser::hfbi::{
-    PlainRecordCsvAnagraficaHFBI, PlainRecordCsvCampionamentoHFBI,
-    VeryItalianRecordCsvAnagraficaHFBI, VeryItalianRecordCsvCampionamentoHFBI,
-    check_anagrafica_hfbi_reader, check_campionamento_hfbi_reader,
+    PlainRecordCsvAnagraficaHFBI,
+    PlainRecordCsvCampionamentoHFBI, VeryItalianRecordCsvAnagraficaHFBI,
+    VeryItalianRecordCsvCampionamentoHFBI,
 };
 use esox::csv::deser::niseci::{
-    PlainRecordCsvCampionamentoNISECI, PlainRecordCsvRiferimentoNISECI,
     PlainRecordCsvAnagraficaNISECI,
+    PlainRecordCsvCampionamentoNISECI, PlainRecordCsvRiferimentoNISECI,
     VeryItalianRecordCsvAnagraficaNISECI, VeryItalianRecordCsvCampionamentoNISECI,
-    VeryItalianRecordCsvRiferimentoNISECI, check_anagrafica_niseci_reader,
-    check_campionamento_niseci_reader, check_riferimento_niseci_reader,
-};
-use esox::csv::parser::hfbi::{check_records_anagrafica_hfbi, check_records_campionamento_hfbi};
-use esox::csv::parser::niseci::{
-    check_records_anagrafica_niseci, check_records_campionamento_niseci,
-    check_records_riferimento_niseci,
+    VeryItalianRecordCsvRiferimentoNISECI,
 };
 use esox::domain::hfbi::{AnagraficaHFBI, CampionamentoHFBI, RisultatoHFBI};
-use esox::domain::niseci::{AnagraficaNISECI, CampionamentoNISECI, RiferimentoNISECI, RisultatoNISECI};
+use esox::domain::niseci::{
+    AnagraficaNISECI, CampionamentoNISECI, RiferimentoNISECI, RisultatoNISECI,
+};
 use esox::engines::hfbi::full::calculate_hfbi;
 use esox::engines::niseci::full::{calculate_niseci, calculate_rqe_niseci};
 use std::io::Cursor;
@@ -31,128 +35,114 @@ pub fn calc_niseci_italian(
     has_headers: bool,
 ) -> Result<JsValue, Vec<String>> {
     let rif_reader = Cursor::new(rif_str.as_bytes());
-    let checked_rif_vec;
+    let rif_vec;
     if is_italian {
-        let rif_vec;
-        match check_riferimento_niseci_reader::<_, VeryItalianRecordCsvRiferimentoNISECI>(
+        match load_riferimento_niseci_from_reader::<_, VeryItalianRecordCsvRiferimentoNISECI>(
             rif_reader,
             has_headers,
         ) {
             Ok(v) => rif_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-        match check_records_riferimento_niseci(rif_vec) {
-            Ok(v) => checked_rif_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
+            Err(ev) => match ev {
+                RiferimentoNISECIError::Csv(errors) => {
+                    return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                }
+                RiferimentoNISECIError::Value(errors) => {
+                    return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                }
+            },
         }
     } else {
-        let rif_vec;
-        match check_riferimento_niseci_reader::<_, PlainRecordCsvRiferimentoNISECI>(
+        match load_riferimento_niseci_from_reader::<_, PlainRecordCsvRiferimentoNISECI>(
             rif_reader,
             has_headers,
         ) {
             Ok(v) => rif_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-        match check_records_riferimento_niseci(rif_vec) {
-            Ok(v) => checked_rif_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
+            Err(ev) => match ev {
+                RiferimentoNISECIError::Csv(errors) => {
+                    return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                }
+                RiferimentoNISECIError::Value(errors) => {
+                    return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                }
+            },
         }
     };
     let camp_reader = Cursor::new(camp_str.as_bytes());
-    let checked_camp_vec;
+    let camp_vec;
     if is_italian {
-        let camp_vec;
-        match check_campionamento_niseci_reader::<_, VeryItalianRecordCsvCampionamentoNISECI>(
+        match load_campionamento_niseci_from_reader::<_, VeryItalianRecordCsvCampionamentoNISECI>(
             camp_reader,
             has_headers,
+            rif_vec.clone(),
         ) {
             Ok(v) => camp_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-        match check_records_campionamento_niseci(camp_vec, checked_rif_vec.clone()) {
-            Ok(v) => checked_camp_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
+            Err(ev) => match ev {
+                CampionamentoNISECIError::Csv(errors) => {
+                    return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                }
+                CampionamentoNISECIError::Value(errors) => {
+                    return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                }
+            },
         }
     } else {
-        let camp_vec;
-        match check_campionamento_niseci_reader::<_, PlainRecordCsvCampionamentoNISECI>(
+        match load_campionamento_niseci_from_reader::<_, PlainRecordCsvCampionamentoNISECI>(
             camp_reader,
             has_headers,
+            rif_vec.clone(),
         ) {
             Ok(v) => camp_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-        match check_records_campionamento_niseci(camp_vec, checked_rif_vec.clone()) {
-            Ok(v) => checked_camp_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
+            Err(ev) => match ev {
+                CampionamentoNISECIError::Csv(errors) => {
+                    return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                }
+                CampionamentoNISECIError::Value(errors) => {
+                    return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                }
+            },
         }
     }
     let anag_reader = Cursor::new(anag_str.as_bytes());
-    let checked_anag;
+    let anag;
     if is_italian {
-        let anag_vec;
-        match check_anagrafica_niseci_reader::<_, VeryItalianRecordCsvAnagraficaNISECI>(
+        match load_anagrafica_niseci_from_reader::<_, VeryItalianRecordCsvAnagraficaNISECI>(
             anag_reader,
             has_headers,
         ) {
-            Ok(v) => anag_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-        match check_records_anagrafica_niseci(anag_vec) {
-            Ok(v) => checked_anag = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
+            Ok(v) => anag = v,
+            Err(ev) => match ev {
+                AnagraficaNISECIError::Csv(errors) => {
+                    return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                }
+                AnagraficaNISECIError::Value(errors) => {
+                    return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                }
+            },
         }
     } else {
-        let anag_vec;
-        match check_anagrafica_niseci_reader::<_, PlainRecordCsvAnagraficaNISECI>(
+        match load_anagrafica_niseci_from_reader::<_, PlainRecordCsvAnagraficaNISECI>(
             anag_reader,
             has_headers,
         ) {
-            Ok(v) => anag_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-        match check_records_anagrafica_niseci(anag_vec) {
-            Ok(v) => checked_anag = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
+            Ok(v) => anag = v,
+            Err(ev) => match ev {
+                AnagraficaNISECIError::Csv(errors) => {
+                    return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                }
+                AnagraficaNISECIError::Value(errors) => {
+                    return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                }
+            },
         }
     }
 
-    let riferimento = RiferimentoNISECI::new(checked_rif_vec);
-    let campionamento = CampionamentoNISECI::new(checked_camp_vec);
-    let anagrafica: AnagraficaNISECI = checked_anag;
+    let riferimento = RiferimentoNISECI::new(rif_vec);
+    let campionamento = CampionamentoNISECI::new(camp_vec);
+    let anagrafica: AnagraficaNISECI = anag;
     match calculate_niseci(&campionamento, &riferimento, &anagrafica) {
         Ok(v) => {
             let rqe = calculate_rqe_niseci(v.0);
-            let res = RisultatoNISECI::new(
-                v.0,
-                rqe,
-                v.1
-            );
+            let res = RisultatoNISECI::new(v.0, rqe, v.1);
             match serde_wasm_bindgen::to_value(&res) {
                 Ok(v) => Ok(v),
                 Err(_) => Err(vec!["serde fail".to_string()]),
@@ -172,87 +162,84 @@ pub fn calc_hfbi_italian(
     has_headers: bool,
 ) -> Result<JsValue, Vec<String>> {
     let camp_reader = Cursor::new(camp_str.as_bytes());
-    let checked_camp_vec;
+    let camp_vec;
     if is_italian {
-        let camp_vec;
-        match check_campionamento_hfbi_reader::<_, VeryItalianRecordCsvCampionamentoHFBI>(
+        match load_campionamento_hfbi_from_reader::<_, VeryItalianRecordCsvCampionamentoHFBI>(
             camp_reader,
             has_headers,
         ) {
             Ok(v) => camp_vec = v,
             Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-        match check_records_campionamento_hfbi(camp_vec) {
-            Ok(v) => checked_camp_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
+                match ev {
+                    CampionamentoHFBIError::Csv(errors) => {
+                        return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                    }
+                    CampionamentoHFBIError::Value(errors) => {
+                        return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                    }
+                }
             }
         }
     } else {
-        let camp_vec;
-        match check_campionamento_hfbi_reader::<_, PlainRecordCsvCampionamentoHFBI>(
+        match load_campionamento_hfbi_from_reader::<_, PlainRecordCsvCampionamentoHFBI>(
             camp_reader,
             has_headers,
         ) {
             Ok(v) => camp_vec = v,
             Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-        match check_records_campionamento_hfbi(camp_vec) {
-            Ok(v) => checked_camp_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
+                match ev {
+                    CampionamentoHFBIError::Csv(errors) => {
+                        return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                    }
+                    CampionamentoHFBIError::Value(errors) => {
+                        return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                    }
+                }
             }
         }
     }
     let anag_reader = Cursor::new(anag_str.as_bytes());
-    let checked_anag;
+    let anag;
     if is_italian {
-        let anag_vec;
-        match check_anagrafica_hfbi_reader::<_, VeryItalianRecordCsvAnagraficaHFBI>(
+        match load_anagrafica_hfbi_from_reader::<_, VeryItalianRecordCsvAnagraficaHFBI>(
             anag_reader,
             has_headers,
         ) {
-            Ok(v) => anag_vec = v,
+            Ok(v) => anag = v,
             Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-        match check_records_anagrafica_hfbi(anag_vec) {
-            Ok(v) => checked_anag = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
+                match ev {
+                    AnagraficaHFBIError::Csv(errors) => {
+                        return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                    }
+                    AnagraficaHFBIError::Value(errors) => {
+                        return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                    }
+                }
             }
         }
     } else {
-        let anag_vec;
-        match check_anagrafica_hfbi_reader::<_, PlainRecordCsvAnagraficaHFBI>(
+        match load_anagrafica_hfbi_from_reader::<_, PlainRecordCsvAnagraficaHFBI>(
             anag_reader,
             has_headers,
         ) {
-            Ok(v) => anag_vec = v,
+            Ok(v) => anag = v,
             Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-        match check_records_anagrafica_hfbi(anag_vec) {
-            Ok(v) => checked_anag = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
+                match ev {
+                    AnagraficaHFBIError::Csv(errors) => {
+                        return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                    }
+                    AnagraficaHFBIError::Value(errors) => {
+                        return Err(errors.into_iter().map(|e| e.to_string()).collect());
+                    }
+                }
             }
         }
     }
-    let campionamento = CampionamentoHFBI::new(checked_camp_vec);
-    let anagrafica: AnagraficaHFBI = checked_anag;
+    let campionamento = CampionamentoHFBI::new(camp_vec);
+    let anagrafica: AnagraficaHFBI = anag;
     match calculate_hfbi(&campionamento, &anagrafica) {
         Ok(v) => {
-            let res = RisultatoHFBI::new(
-                Some(v.0),
-                v.1,
-            );
+            let res = RisultatoHFBI::new(Some(v.0), v.1);
             match serde_wasm_bindgen::to_value(&res) {
                 Ok(v) => Ok(v),
                 Err(_) => Err(vec!["serde fail".to_string()]),
