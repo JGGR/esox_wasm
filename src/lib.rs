@@ -215,6 +215,24 @@ pub fn parse_anagrafica_niseci(
     }
 }
 
+fn calc_niseci_to_js(
+    campionamento: &CampionamentoNISECI,
+    riferimento: &RiferimentoNISECI,
+    anagrafica: &AnagraficaNISECI,
+) -> Result<JsValue, Vec<String>> {
+    match calculate_niseci(campionamento, riferimento, anagrafica) {
+        Ok(v) => {
+            let rqe = calculate_rqe_niseci(v.0);
+            let res = RisultatoNISECI::new(v.0, rqe, v.1);
+            match serde_wasm_bindgen::to_value(&res) {
+                Ok(v) => Ok(v),
+                Err(_) => Err(vec!["serde fail".to_string()]),
+            }
+        }
+        Err(ev) => Err(ev),
+    }
+}
+
 #[wasm_bindgen]
 pub fn calc_niseci_italian(
     rif_str: &str,
@@ -226,18 +244,24 @@ pub fn calc_niseci_italian(
     let riferimento = load_riferimento_niseci(rif_str, is_italian, has_headers)?;
     let campionamento = load_campionamento_niseci(camp_str, &riferimento, is_italian, has_headers)?;
     let anagrafica = load_anagrafica_niseci(anag_str, is_italian, has_headers)?;
+    calc_niseci_to_js(&campionamento, &riferimento, &anagrafica)
+}
 
-    match calculate_niseci(&campionamento, &riferimento, &anagrafica) {
-        Ok(v) => {
-            let rqe = calculate_rqe_niseci(v.0);
-            let res = RisultatoNISECI::new(v.0, rqe, v.1);
-            match serde_wasm_bindgen::to_value(&res) {
-                Ok(v) => Ok(v),
-                Err(_) => Err(vec!["serde fail".to_string()]),
-            }
-        }
-        Err(ev) => Err(ev),
-    }
+#[wasm_bindgen]
+pub fn calc_niseci_from_js(
+    riferimento: JsValue,
+    campionamento: JsValue,
+    anagrafica: JsValue,
+) -> Result<JsValue, Vec<String>> {
+    let riferimento: RiferimentoNISECI =
+        serde_wasm_bindgen::from_value(riferimento).map_err(|e| vec![e.to_string()])?;
+
+    let campionamento: CampionamentoNISECI =
+        serde_wasm_bindgen::from_value(campionamento).map_err(|e| vec![e.to_string()])?;
+
+    let anagrafica: AnagraficaNISECI =
+        serde_wasm_bindgen::from_value(anagrafica).map_err(|e| vec![e.to_string()])?;
+    calc_niseci_to_js(&campionamento, &riferimento, &anagrafica)
 }
 
 #[wasm_bindgen]
@@ -386,17 +410,11 @@ pub fn parse_anagrafica_hfbi(
     }
 }
 
-#[wasm_bindgen]
-pub fn calc_hfbi_italian(
-    camp_str: &str,
-    anag_str: &str,
-    is_italian: bool,
-    has_headers: bool,
+fn calc_hfbi_to_js(
+    campionamento: &CampionamentoHFBI,
+    anagrafica: &AnagraficaHFBI,
 ) -> Result<JsValue, Vec<String>> {
-    let campionamento = load_campionamento_hfbi(camp_str, is_italian, has_headers)?;
-    let anagrafica = load_anagrafica_hfbi(anag_str, is_italian, has_headers)?;
-
-    match calculate_hfbi(&campionamento, &anagrafica) {
+    match calculate_hfbi(campionamento, anagrafica) {
         Ok(v) => {
             let res = RisultatoHFBI::new(Some(v.0), v.1);
             match serde_wasm_bindgen::to_value(&res) {
@@ -406,6 +424,31 @@ pub fn calc_hfbi_italian(
         }
         Err(e) => Err(vec![e]),
     }
+}
+
+#[wasm_bindgen]
+pub fn calc_hfbi_italian(
+    camp_str: &str,
+    anag_str: &str,
+    is_italian: bool,
+    has_headers: bool,
+) -> Result<JsValue, Vec<String>> {
+    let campionamento = load_campionamento_hfbi(camp_str, is_italian, has_headers)?;
+    let anagrafica = load_anagrafica_hfbi(anag_str, is_italian, has_headers)?;
+    calc_hfbi_to_js(&campionamento, &anagrafica)
+}
+
+#[wasm_bindgen]
+pub fn calc_hfbi_from_js(
+    campionamento: JsValue,
+    anagrafica: JsValue,
+) -> Result<JsValue, Vec<String>> {
+    let campionamento: CampionamentoHFBI =
+        serde_wasm_bindgen::from_value(campionamento).map_err(|e| vec![e.to_string()])?;
+
+    let anagrafica: AnagraficaHFBI =
+        serde_wasm_bindgen::from_value(anagrafica).map_err(|e| vec![e.to_string()])?;
+    calc_hfbi_to_js(&campionamento, &anagrafica)
 }
 
 #[wasm_bindgen]
