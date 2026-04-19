@@ -10,6 +10,9 @@ exclude = [
     "index.html",
 ]
 
+[features]
+experimental = [ "esox/experimental" ]
+
 [lib]
 crate-type = ["cdylib"]
 

@@ -94,6 +94,7 @@ fn load_campionamento_niseci(
 }
 
 #[wasm_bindgen]
+#[cfg(feature = "experimental")]
 pub fn parse_campionamento_niseci(
     camp_str: &str,
     riferimento: JsValue,
@@ -173,6 +174,7 @@ pub fn calc_niseci_italian(
 }
 
 #[wasm_bindgen]
+#[cfg(feature = "experimental")]
 pub fn calc_niseci_from_js(
     riferimento: JsValue,
     campionamento: JsValue,
@@ -190,6 +192,7 @@ pub fn calc_niseci_from_js(
 }
 
 #[wasm_bindgen]
+#[cfg(feature = "experimental")]
 pub fn res_niseci_to_csv(
     res: JsValue,
     anagrafica: JsValue,
@@ -322,6 +325,7 @@ pub fn calc_hfbi_italian(
 }
 
 #[wasm_bindgen]
+#[cfg(feature = "experimental")]
 pub fn calc_hfbi_from_js(
     campionamento: JsValue,
     anagrafica: JsValue,
@@ -335,6 +339,7 @@ pub fn calc_hfbi_from_js(
 }
 
 #[wasm_bindgen]
+#[cfg(feature = "experimental")]
 pub fn res_hfbi_to_csv(
     res: JsValue,
     anagrafica: JsValue,
