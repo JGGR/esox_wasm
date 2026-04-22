@@ -14,16 +14,16 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-use esox::csv::load::hfbi::{
-    load_anagrafica_hfbi_from_reader, load_campionamento_hfbi_from_reader, AnagraficaHFBIError,
-    CampionamentoHFBIError,
+pub(crate) mod csv;
+#[cfg(feature = "experimental")]
+pub mod exper;
+#[cfg(feature = "json")]
+pub mod json;
+pub mod meta;
+use crate::csv::{
+    load_csv_anagrafica_hfbi, load_csv_anagrafica_niseci, load_csv_campionamento_hfbi,
+    load_csv_campionamento_niseci, load_csv_riferimento_niseci,
 };
-use esox::csv::load::niseci::{
-    load_anagrafica_niseci_from_reader, load_campionamento_niseci_from_reader,
-    load_riferimento_niseci_from_reader, AnagraficaNISECIError, CampionamentoNISECIError,
-    RiferimentoNISECIError,
-};
-use esox::csv::load::InputFormat;
 use esox::domain::hfbi::{
     AnagraficaHFBI, CampionamentoHFBI, RisultatoHFBI, StatoEcologicoHFBI, ValoriIntermediHFBI,
 };
@@ -33,115 +33,9 @@ use esox::domain::niseci::{
 };
 use esox::engines::hfbi::full::calculate_hfbi;
 use esox::engines::niseci::full::{calculate_niseci, calculate_rqe_niseci};
-use std::io::Cursor;
 use wasm_bindgen::prelude::*;
-pub mod meta;
 
-fn load_riferimento_niseci(
-    rif_str: &str,
-    is_italian: bool,
-    has_headers: bool,
-) -> Result<RiferimentoNISECI, Vec<String>> {
-    let rif_reader = Cursor::new(rif_str.as_bytes());
-    let format = if is_italian {
-        InputFormat::Alternative
-    } else {
-        InputFormat::Standard
-    };
-    load_riferimento_niseci_from_reader::<_>(rif_reader, has_headers, format).map_err(|ev| match ev
-    {
-        RiferimentoNISECIError::Csv(errors) => errors.into_iter().map(|e| e.to_string()).collect(),
-        RiferimentoNISECIError::Value(errors) => {
-            errors.into_iter().map(|e| e.to_string()).collect()
-        }
-    })
-}
-
-#[wasm_bindgen]
-pub fn parse_riferimento_niseci(
-    rif_str: &str,
-    is_italian: bool,
-    has_headers: bool,
-) -> Result<JsValue, Vec<String>> {
-    let res = load_riferimento_niseci(rif_str, is_italian, has_headers);
-    match serde_wasm_bindgen::to_value(&res) {
-        Ok(v) => Ok(v),
-        Err(_) => Err(vec!["serde fail".to_string()]),
-    }
-}
-
-fn load_campionamento_niseci(
-    camp_str: &str,
-    riferimento: &RiferimentoNISECI,
-    is_italian: bool,
-    has_headers: bool,
-) -> Result<CampionamentoNISECI, Vec<String>> {
-    let camp_reader = Cursor::new(camp_str.as_bytes());
-    let format = if is_italian {
-        InputFormat::Alternative
-    } else {
-        InputFormat::Standard
-    };
-    load_campionamento_niseci_from_reader::<_>(camp_reader, has_headers, riferimento, format)
-        .map_err(|ev| match ev {
-            CampionamentoNISECIError::Csv(errors) => {
-                errors.into_iter().map(|e| e.to_string()).collect()
-            }
-            CampionamentoNISECIError::Value(errors) => {
-                errors.into_iter().map(|e| e.to_string()).collect()
-            }
-        })
-}
-
-#[wasm_bindgen]
-#[cfg(feature = "experimental")]
-pub fn parse_campionamento_niseci(
-    camp_str: &str,
-    riferimento: JsValue,
-    is_italian: bool,
-    has_headers: bool,
-) -> Result<JsValue, Vec<String>> {
-    let riferimento: RiferimentoNISECI =
-        serde_wasm_bindgen::from_value(riferimento).map_err(|e| vec![e.to_string()])?;
-    let res = load_campionamento_niseci(camp_str, &riferimento, is_italian, has_headers);
-    match serde_wasm_bindgen::to_value(&res) {
-        Ok(v) => Ok(v),
-        Err(_) => Err(vec!["serde fail".to_string()]),
-    }
-}
-
-fn load_anagrafica_niseci(
-    anag_str: &str,
-    is_italian: bool,
-    has_headers: bool,
-) -> Result<AnagraficaNISECI, Vec<String>> {
-    let anag_reader = Cursor::new(anag_str.as_bytes());
-    let format = if is_italian {
-        InputFormat::Alternative
-    } else {
-        InputFormat::Standard
-    };
-    load_anagrafica_niseci_from_reader::<_>(anag_reader, has_headers, format).map_err(|ev| match ev
-    {
-        AnagraficaNISECIError::Csv(errors) => errors.into_iter().map(|e| e.to_string()).collect(),
-        AnagraficaNISECIError::Value(errors) => errors.into_iter().map(|e| e.to_string()).collect(),
-    })
-}
-
-#[wasm_bindgen]
-pub fn parse_anagrafica_niseci(
-    anag_str: &str,
-    is_italian: bool,
-    has_headers: bool,
-) -> Result<JsValue, Vec<String>> {
-    let res = load_anagrafica_niseci(anag_str, is_italian, has_headers);
-    match serde_wasm_bindgen::to_value(&res) {
-        Ok(v) => Ok(v),
-        Err(_) => Err(vec!["serde fail".to_string()]),
-    }
-}
-
-fn calc_niseci_to_js(
+pub(crate) fn calc_niseci_to_js(
     campionamento: &CampionamentoNISECI,
     riferimento: &RiferimentoNISECI,
     anagrafica: &AnagraficaNISECI,
@@ -167,43 +61,11 @@ pub fn calc_niseci_italian(
     is_italian: bool,
     has_headers: bool,
 ) -> Result<JsValue, Vec<String>> {
-    let riferimento = load_riferimento_niseci(rif_str, is_italian, has_headers)?;
-    let campionamento = load_campionamento_niseci(camp_str, &riferimento, is_italian, has_headers)?;
-    let anagrafica = load_anagrafica_niseci(anag_str, is_italian, has_headers)?;
+    let riferimento = load_csv_riferimento_niseci(rif_str, is_italian, has_headers)?;
+    let campionamento =
+        load_csv_campionamento_niseci(camp_str, &riferimento, is_italian, has_headers)?;
+    let anagrafica = load_csv_anagrafica_niseci(anag_str, is_italian, has_headers)?;
     calc_niseci_to_js(&campionamento, &riferimento, &anagrafica)
-}
-
-#[wasm_bindgen]
-#[cfg(feature = "experimental")]
-pub fn calc_niseci_from_js(
-    riferimento: JsValue,
-    campionamento: JsValue,
-    anagrafica: JsValue,
-) -> Result<JsValue, Vec<String>> {
-    let riferimento: RiferimentoNISECI =
-        serde_wasm_bindgen::from_value(riferimento).map_err(|e| vec![e.to_string()])?;
-
-    let campionamento: CampionamentoNISECI =
-        serde_wasm_bindgen::from_value(campionamento).map_err(|e| vec![e.to_string()])?;
-
-    let anagrafica: AnagraficaNISECI =
-        serde_wasm_bindgen::from_value(anagrafica).map_err(|e| vec![e.to_string()])?;
-    calc_niseci_to_js(&campionamento, &riferimento, &anagrafica)
-}
-
-#[wasm_bindgen]
-#[cfg(feature = "experimental")]
-pub fn res_niseci_to_csv(
-    res: JsValue,
-    anagrafica: JsValue,
-    comma_csv_delimiter: bool,
-) -> Result<String, JsValue> {
-    let anagrafica: AnagraficaNISECI = serde_wasm_bindgen::from_value(anagrafica)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
-    let risultato: RisultatoNISECI =
-        serde_wasm_bindgen::from_value(res).map_err(|e| JsValue::from_str(&e.to_string()))?;
-
-    Ok(risultato.to_csv(&anagrafica, comma_csv_delimiter))
 }
 
 #[wasm_bindgen]
@@ -230,73 +92,7 @@ pub fn res_niseci_to_stato_eco_str(res: JsValue, area: JsValue) -> Result<String
         .to_string())
 }
 
-fn load_campionamento_hfbi(
-    camp_str: &str,
-    is_italian: bool,
-    has_headers: bool,
-) -> Result<CampionamentoHFBI, Vec<String>> {
-    let camp_reader = Cursor::new(camp_str.as_bytes());
-    let format = if is_italian {
-        InputFormat::Alternative
-    } else {
-        InputFormat::Standard
-    };
-    load_campionamento_hfbi_from_reader::<_>(camp_reader, has_headers, format).map_err(
-        |ev| match ev {
-            CampionamentoHFBIError::Csv(errors) => {
-                errors.into_iter().map(|e| e.to_string()).collect()
-            }
-            CampionamentoHFBIError::Value(errors) => {
-                errors.into_iter().map(|e| e.to_string()).collect()
-            }
-        },
-    )
-}
-
-#[wasm_bindgen]
-pub fn parse_campionamento_hfbi(
-    camp_str: &str,
-    is_italian: bool,
-    has_headers: bool,
-) -> Result<JsValue, Vec<String>> {
-    let res = load_campionamento_hfbi(camp_str, is_italian, has_headers);
-    match serde_wasm_bindgen::to_value(&res) {
-        Ok(v) => Ok(v),
-        Err(_) => Err(vec!["serde fail".to_string()]),
-    }
-}
-
-fn load_anagrafica_hfbi(
-    anag_str: &str,
-    is_italian: bool,
-    has_headers: bool,
-) -> Result<AnagraficaHFBI, Vec<String>> {
-    let anag_reader = Cursor::new(anag_str.as_bytes());
-    let format = if is_italian {
-        InputFormat::Alternative
-    } else {
-        InputFormat::Standard
-    };
-    load_anagrafica_hfbi_from_reader::<_>(anag_reader, has_headers, format).map_err(|ev| match ev {
-        AnagraficaHFBIError::Csv(errors) => errors.into_iter().map(|e| e.to_string()).collect(),
-        AnagraficaHFBIError::Value(errors) => errors.into_iter().map(|e| e.to_string()).collect(),
-    })
-}
-
-#[wasm_bindgen]
-pub fn parse_anagrafica_hfbi(
-    anag_str: &str,
-    is_italian: bool,
-    has_headers: bool,
-) -> Result<JsValue, Vec<String>> {
-    let res = load_anagrafica_hfbi(anag_str, is_italian, has_headers);
-    match serde_wasm_bindgen::to_value(&res) {
-        Ok(v) => Ok(v),
-        Err(_) => Err(vec!["serde fail".to_string()]),
-    }
-}
-
-fn calc_hfbi_to_js(
+pub(crate) fn calc_hfbi_to_js(
     campionamento: &CampionamentoHFBI,
     anagrafica: &AnagraficaHFBI,
 ) -> Result<JsValue, Vec<String>> {
@@ -319,38 +115,9 @@ pub fn calc_hfbi_italian(
     is_italian: bool,
     has_headers: bool,
 ) -> Result<JsValue, Vec<String>> {
-    let campionamento = load_campionamento_hfbi(camp_str, is_italian, has_headers)?;
-    let anagrafica = load_anagrafica_hfbi(anag_str, is_italian, has_headers)?;
+    let campionamento = load_csv_campionamento_hfbi(camp_str, is_italian, has_headers)?;
+    let anagrafica = load_csv_anagrafica_hfbi(anag_str, is_italian, has_headers)?;
     calc_hfbi_to_js(&campionamento, &anagrafica)
-}
-
-#[wasm_bindgen]
-#[cfg(feature = "experimental")]
-pub fn calc_hfbi_from_js(
-    campionamento: JsValue,
-    anagrafica: JsValue,
-) -> Result<JsValue, Vec<String>> {
-    let campionamento: CampionamentoHFBI =
-        serde_wasm_bindgen::from_value(campionamento).map_err(|e| vec![e.to_string()])?;
-
-    let anagrafica: AnagraficaHFBI =
-        serde_wasm_bindgen::from_value(anagrafica).map_err(|e| vec![e.to_string()])?;
-    calc_hfbi_to_js(&campionamento, &anagrafica)
-}
-
-#[wasm_bindgen]
-#[cfg(feature = "experimental")]
-pub fn res_hfbi_to_csv(
-    res: JsValue,
-    anagrafica: JsValue,
-    comma_csv_delimiter: bool,
-) -> Result<String, JsValue> {
-    let anagrafica: AnagraficaHFBI = serde_wasm_bindgen::from_value(anagrafica)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
-    let risultato: RisultatoHFBI =
-        serde_wasm_bindgen::from_value(res).map_err(|e| JsValue::from_str(&e.to_string()))?;
-
-    Ok(risultato.to_csv(&anagrafica, comma_csv_delimiter))
 }
 
 #[wasm_bindgen]

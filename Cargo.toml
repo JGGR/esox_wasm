@@ -12,6 +12,7 @@ exclude = [
 
 [features]
 experimental = [ "esox/experimental" ]
+json = [ "esox/json" ]
 
 [lib]
 crate-type = ["cdylib"]
