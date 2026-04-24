@@ -1,4 +1,6 @@
 # esox_wasm
+[![Latest crates.io version](https://img.shields.io/crates/v/esox_wasm.svg)](https://crates.io/crates/esox_wasm)
+[![Latest npm version](https://img.shields.io/npm/v/esox_wasm)](https://npmjs.com/package/esox_wasm)
 
 ## WASM glue library for NISECI and HFBI calc
 
@@ -13,7 +15,7 @@
 
 ## What is this thing? <a name = "witt"></a>
 
-This is a WASM glue library for calculating the NISECI and/or HFBI index for a dataset.
+This is a WASM glue library for calculating the NISECI and/or HFBI index for a dataset, based on [esox](https://github.com/JGGR/esox).
 
 ## Input templates <a name = "input_templates"></a>
 

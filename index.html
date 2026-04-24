@@ -28,10 +28,16 @@ Anagrafica HFBI:
 </br>
 <pre id="out_hfbi"></pre>
 
+</br>
+<pre id="esox_wasm_version"></pre>
+<pre id="esox_version"></pre>
 <script type="module">
-  import init, { calc_niseci_italian, calc_hfbi_italian } from "./pkg/esox_wasm.js";
+  import init, { calc_niseci_italian, calc_hfbi_italian, get_version, get_esox_version } from "./pkg/esox_wasm.js";
 
   await init(); // load .wasm
+  document.getElementById("esox_wasm_version").textContent = "esox_wasm v" + get_version();
+  document.getElementById("esox_version").textContent = "esox v" + get_esox_version();
+
 
   const out_niseci = document.getElementById("out_niseci");
   const out_hfbi = document.getElementById("out_hfbi");

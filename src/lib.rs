@@ -1,26 +1,57 @@
-use esox::csv::deser::hfbi::{
-    PlainRecordCsvAnagraficaHFBI, PlainRecordCsvCampionamentoHFBI,
-    VeryItalianRecordCsvAnagraficaHFBI, VeryItalianRecordCsvCampionamentoHFBI,
-    check_anagrafica_hfbi_reader, check_campionamento_hfbi_reader,
+// SPDX-License-Identifier: GPL-3.0-only
+/*
+    Copyright (C) 2024-2026 jgabaut, gioninjo
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, version 3 of the License.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+pub(crate) mod csv;
+#[cfg(feature = "experimental")]
+pub mod exper;
+#[cfg(feature = "json")]
+pub mod json;
+pub mod meta;
+use crate::csv::{
+    load_csv_anagrafica_hfbi, load_csv_anagrafica_niseci, load_csv_campionamento_hfbi,
+    load_csv_campionamento_niseci, load_csv_riferimento_niseci,
 };
-use esox::csv::deser::niseci::{
-    PlainRecordCsvCampionamentoNISECI, PlainRecordCsvRiferimentoNISECI,
-    PlainRecordCsvAnagraficaNISECI,
-    VeryItalianRecordCsvAnagraficaNISECI, VeryItalianRecordCsvCampionamentoNISECI,
-    VeryItalianRecordCsvRiferimentoNISECI, check_anagrafica_niseci_reader,
-    check_campionamento_niseci_reader, check_riferimento_niseci_reader,
+use esox::domain::hfbi::{
+    AnagraficaHFBI, CampionamentoHFBI, RisultatoHFBI, StatoEcologicoHFBI, ValoriIntermediHFBI,
 };
-use esox::csv::parser::hfbi::{check_records_anagrafica_hfbi, check_records_campionamento_hfbi};
-use esox::csv::parser::niseci::{
-    check_records_anagrafica_niseci, check_records_campionamento_niseci,
-    check_records_riferimento_niseci,
+use esox::domain::niseci::{
+    AnagraficaNISECI, AreaNISECI, CampionamentoNISECI, RiferimentoNISECI, RisultatoNISECI,
+    StatoEcologicoNISECI, ValoriIntermediNISECI,
 };
-use esox::domain::hfbi::{AnagraficaHFBI, CampionamentoHFBI, RisultatoHFBI};
-use esox::domain::niseci::{AnagraficaNISECI, CampionamentoNISECI, RiferimentoNISECI, RisultatoNISECI};
 use esox::engines::hfbi::full::calculate_hfbi;
 use esox::engines::niseci::full::{calculate_niseci, calculate_rqe_niseci};
-use std::io::Cursor;
 use wasm_bindgen::prelude::*;
+
+pub(crate) fn calc_niseci_to_js(
+    campionamento: &CampionamentoNISECI,
+    riferimento: &RiferimentoNISECI,
+    anagrafica: &AnagraficaNISECI,
+) -> Result<JsValue, Vec<String>> {
+    match calculate_niseci(campionamento, riferimento, anagrafica) {
+        Ok(v) => {
+            let rqe = calculate_rqe_niseci(v.0);
+            let res = RisultatoNISECI::new(v.0, rqe, v.1);
+            match serde_wasm_bindgen::to_value(&res) {
+                Ok(v) => Ok(v),
+                Err(_) => Err(vec!["serde fail".to_string()]),
+            }
+        }
+        Err(ev) => Err(ev),
+    }
+}
 
 #[wasm_bindgen]
 pub fn calc_niseci_italian(
@@ -30,137 +61,50 @@ pub fn calc_niseci_italian(
     is_italian: bool,
     has_headers: bool,
 ) -> Result<JsValue, Vec<String>> {
-    let rif_reader = Cursor::new(rif_str.as_bytes());
-    let checked_rif_vec;
-    if is_italian {
-        let rif_vec;
-        match check_riferimento_niseci_reader::<_, VeryItalianRecordCsvRiferimentoNISECI>(
-            rif_reader,
-            has_headers,
-        ) {
-            Ok(v) => rif_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-        match check_records_riferimento_niseci(rif_vec) {
-            Ok(v) => checked_rif_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-    } else {
-        let rif_vec;
-        match check_riferimento_niseci_reader::<_, PlainRecordCsvRiferimentoNISECI>(
-            rif_reader,
-            has_headers,
-        ) {
-            Ok(v) => rif_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-        match check_records_riferimento_niseci(rif_vec) {
-            Ok(v) => checked_rif_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-    };
-    let camp_reader = Cursor::new(camp_str.as_bytes());
-    let checked_camp_vec;
-    if is_italian {
-        let camp_vec;
-        match check_campionamento_niseci_reader::<_, VeryItalianRecordCsvCampionamentoNISECI>(
-            camp_reader,
-            has_headers,
-        ) {
-            Ok(v) => camp_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-        match check_records_campionamento_niseci(camp_vec, checked_rif_vec.clone()) {
-            Ok(v) => checked_camp_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-    } else {
-        let camp_vec;
-        match check_campionamento_niseci_reader::<_, PlainRecordCsvCampionamentoNISECI>(
-            camp_reader,
-            has_headers,
-        ) {
-            Ok(v) => camp_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-        match check_records_campionamento_niseci(camp_vec, checked_rif_vec.clone()) {
-            Ok(v) => checked_camp_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-    }
-    let anag_reader = Cursor::new(anag_str.as_bytes());
-    let checked_anag;
-    if is_italian {
-        let anag_vec;
-        match check_anagrafica_niseci_reader::<_, VeryItalianRecordCsvAnagraficaNISECI>(
-            anag_reader,
-            has_headers,
-        ) {
-            Ok(v) => anag_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-        match check_records_anagrafica_niseci(anag_vec) {
-            Ok(v) => checked_anag = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-    } else {
-        let anag_vec;
-        match check_anagrafica_niseci_reader::<_, PlainRecordCsvAnagraficaNISECI>(
-            anag_reader,
-            has_headers,
-        ) {
-            Ok(v) => anag_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-        match check_records_anagrafica_niseci(anag_vec) {
-            Ok(v) => checked_anag = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-    }
+    let riferimento = load_csv_riferimento_niseci(rif_str, is_italian, has_headers)?;
+    let campionamento =
+        load_csv_campionamento_niseci(camp_str, &riferimento, is_italian, has_headers)?;
+    let anagrafica = load_csv_anagrafica_niseci(anag_str, is_italian, has_headers)?;
+    calc_niseci_to_js(&campionamento, &riferimento, &anagrafica)
+}
 
-    let riferimento = RiferimentoNISECI::new(checked_rif_vec);
-    let campionamento = CampionamentoNISECI::new(checked_camp_vec);
-    let anagrafica: AnagraficaNISECI = checked_anag;
-    match calculate_niseci(&campionamento, &riferimento, &anagrafica) {
+#[wasm_bindgen]
+pub fn intermediates_niseci_to_csv(
+    intermediates: JsValue,
+    comma_csv_delimiter: bool,
+) -> Result<String, JsValue> {
+    let intermediates: ValoriIntermediNISECI = serde_wasm_bindgen::from_value(intermediates)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+    Ok(intermediates.to_csv(comma_csv_delimiter))
+}
+
+#[wasm_bindgen]
+pub fn res_niseci_to_stato_eco_str(res: JsValue, area: JsValue) -> Result<String, JsValue> {
+    let risultato: RisultatoNISECI =
+        serde_wasm_bindgen::from_value(res).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let area: AreaNISECI =
+        serde_wasm_bindgen::from_value(area).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(risultato
+        .get_valore()
+        .map(|v| StatoEcologicoNISECI::from((v, &area)))
+        .ok_or("NC")?
+        .to_string())
+}
+
+pub(crate) fn calc_hfbi_to_js(
+    campionamento: &CampionamentoHFBI,
+    anagrafica: &AnagraficaHFBI,
+) -> Result<JsValue, Vec<String>> {
+    match calculate_hfbi(campionamento, anagrafica) {
         Ok(v) => {
-            let rqe = calculate_rqe_niseci(v.0);
-            let res = RisultatoNISECI::new(
-                v.0,
-                rqe,
-                v.1
-            );
+            let res = RisultatoHFBI::new(Some(v.0), v.1);
             match serde_wasm_bindgen::to_value(&res) {
                 Ok(v) => Ok(v),
                 Err(_) => Err(vec!["serde fail".to_string()]),
             }
         }
-        Err(ev) => {
-            return Err(ev);
-        }
+        Err(e) => Err(vec![e]),
     }
 }
 
@@ -171,95 +115,41 @@ pub fn calc_hfbi_italian(
     is_italian: bool,
     has_headers: bool,
 ) -> Result<JsValue, Vec<String>> {
-    let camp_reader = Cursor::new(camp_str.as_bytes());
-    let checked_camp_vec;
-    if is_italian {
-        let camp_vec;
-        match check_campionamento_hfbi_reader::<_, VeryItalianRecordCsvCampionamentoHFBI>(
-            camp_reader,
-            has_headers,
-        ) {
-            Ok(v) => camp_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-        match check_records_campionamento_hfbi(camp_vec) {
-            Ok(v) => checked_camp_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-    } else {
-        let camp_vec;
-        match check_campionamento_hfbi_reader::<_, PlainRecordCsvCampionamentoHFBI>(
-            camp_reader,
-            has_headers,
-        ) {
-            Ok(v) => camp_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-        match check_records_campionamento_hfbi(camp_vec) {
-            Ok(v) => checked_camp_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-    }
-    let anag_reader = Cursor::new(anag_str.as_bytes());
-    let checked_anag;
-    if is_italian {
-        let anag_vec;
-        match check_anagrafica_hfbi_reader::<_, VeryItalianRecordCsvAnagraficaHFBI>(
-            anag_reader,
-            has_headers,
-        ) {
-            Ok(v) => anag_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-        match check_records_anagrafica_hfbi(anag_vec) {
-            Ok(v) => checked_anag = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-    } else {
-        let anag_vec;
-        match check_anagrafica_hfbi_reader::<_, PlainRecordCsvAnagraficaHFBI>(
-            anag_reader,
-            has_headers,
-        ) {
-            Ok(v) => anag_vec = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-        match check_records_anagrafica_hfbi(anag_vec) {
-            Ok(v) => checked_anag = v,
-            Err(ev) => {
-                return Err(ev.into_iter().map(|e| e.to_string()).collect());
-            }
-        }
-    }
-    let campionamento = CampionamentoHFBI::new(checked_camp_vec);
-    let anagrafica: AnagraficaHFBI = checked_anag;
-    match calculate_hfbi(&campionamento, &anagrafica) {
-        Ok(v) => {
-            let res = RisultatoHFBI::new(
-                Some(v.0),
-                v.1,
-            );
-            match serde_wasm_bindgen::to_value(&res) {
-                Ok(v) => Ok(v),
-                Err(_) => Err(vec!["serde fail".to_string()]),
-            }
-        }
-        Err(e) => {
-            return Err(vec![e]);
-        }
-    }
+    let campionamento = load_csv_campionamento_hfbi(camp_str, is_italian, has_headers)?;
+    let anagrafica = load_csv_anagrafica_hfbi(anag_str, is_italian, has_headers)?;
+    calc_hfbi_to_js(&campionamento, &anagrafica)
+}
+
+#[wasm_bindgen]
+pub fn intermediates_hfbi_to_csv(
+    intermediates: JsValue,
+    comma_csv_delimiter: bool,
+) -> Result<String, JsValue> {
+    let intermediates: ValoriIntermediHFBI = serde_wasm_bindgen::from_value(intermediates)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+    Ok(intermediates.to_csv(comma_csv_delimiter))
+}
+
+#[wasm_bindgen]
+pub fn res_hfbi_to_stato_eco_str(res: JsValue) -> Result<String, JsValue> {
+    let risultato: RisultatoHFBI =
+        serde_wasm_bindgen::from_value(res).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(risultato
+        .get_valore()
+        .map(StatoEcologicoHFBI::from)
+        .ok_or("NC")?
+        .to_string())
+}
+
+#[wasm_bindgen]
+pub fn get_version() -> String {
+    use crate::meta::version;
+    version().to_string()
+}
+
+#[wasm_bindgen]
+pub fn get_esox_version() -> String {
+    use esox::meta::version;
+    version().to_string()
 }
