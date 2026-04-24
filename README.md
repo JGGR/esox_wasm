@@ -1,4 +1,6 @@
 # esox_wasm
+[![Latest crates.io version](https://img.shields.io/crates/v/esox_wasm.svg)](https://crates.io/crates/esox_wasm)
+[![Latest npm version](https://img.shields.io/npm/v/esox_wasm)](https://npmjs.com/package/esox_wasm)
 
 ## WASM glue library for NISECI and HFBI calc
 
