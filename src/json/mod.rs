@@ -15,12 +15,12 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 use crate::{calc_hfbi_to_js, calc_niseci_to_js};
+use esox::deser::{
+    PlainRecordAnagraficaHFBI, PlainRecordAnagraficaNISECI, PlainRecordCampionamentoHFBI,
+    PlainRecordCampionamentoNISECI, PlainRecordRiferimentoNISECI,
+};
 use esox::domain::hfbi::{AnagraficaHFBI, CampionamentoHFBI};
 use esox::domain::niseci::{AnagraficaNISECI, CampionamentoNISECI, RiferimentoNISECI};
-use esox::deser::{PlainRecordAnagraficaHFBI, PlainRecordCampionamentoHFBI,
-    PlainRecordAnagraficaNISECI, PlainRecordCampionamentoNISECI,
-    PlainRecordRiferimentoNISECI,
-};
 use esox::json::load::hfbi::{
     load_json_anagrafica_hfbi_from_reader, load_json_campionamento_hfbi_from_reader,
     AnagraficaHFBIError, CampionamentoHFBIError,
@@ -56,8 +56,8 @@ pub(crate) fn load_json_riferimento_niseci(
     rif_str: &str,
 ) -> Result<RiferimentoNISECI, Vec<String>> {
     let rif_reader = Cursor::new(rif_str.as_bytes());
-    load_json_riferimento_niseci_from_reader::<_, PlainRecordRiferimentoNISECI>(rif_reader)
-        .map_err(|ev| match ev {
+    load_json_riferimento_niseci_from_reader::<_, PlainRecordRiferimentoNISECI>(rif_reader).map_err(
+        |ev| match ev {
             RiferimentoNISECIError::Json(errors) => {
                 errors.into_iter().map(|e| e.to_string()).collect()
             }
@@ -65,7 +65,8 @@ pub(crate) fn load_json_riferimento_niseci(
                 errors.into_iter().map(|e| e.to_string()).collect()
             }
             RiferimentoNISECIError::Io(e) => vec![e.to_string()],
-        })
+        },
+    )
 }
 
 pub(crate) fn load_json_campionamento_niseci(
@@ -90,8 +91,8 @@ pub(crate) fn load_json_campionamento_niseci(
 
 pub(crate) fn load_json_anagrafica_niseci(anag_str: &str) -> Result<AnagraficaNISECI, Vec<String>> {
     let anag_reader = Cursor::new(anag_str.as_bytes());
-    load_json_anagrafica_niseci_from_reader::<_, PlainRecordAnagraficaNISECI>(anag_reader)
-        .map_err(|ev| match ev {
+    load_json_anagrafica_niseci_from_reader::<_, PlainRecordAnagraficaNISECI>(anag_reader).map_err(
+        |ev| match ev {
             AnagraficaNISECIError::Json(errors) => {
                 errors.into_iter().map(|e| e.to_string()).collect()
             }
@@ -99,7 +100,8 @@ pub(crate) fn load_json_anagrafica_niseci(anag_str: &str) -> Result<AnagraficaNI
                 errors.into_iter().map(|e| e.to_string()).collect()
             }
             AnagraficaNISECIError::Io(e) => vec![e.to_string()],
-        })
+        },
+    )
 }
 
 pub(crate) fn load_json_campionamento_hfbi(
