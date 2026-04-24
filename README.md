@@ -15,7 +15,7 @@
 
 ## What is this thing? <a name = "witt"></a>
 
-This is a WASM glue library for calculating the NISECI and/or HFBI index for a dataset.
+This is a WASM glue library for calculating the NISECI and/or HFBI index for a dataset, based on [esox](https://github.com/JGGR/esox).
 
 ## Input templates <a name = "input_templates"></a>
 
