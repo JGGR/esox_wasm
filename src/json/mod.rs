@@ -61,6 +61,9 @@ pub(crate) fn load_json_riferimento_niseci(
             RiferimentoNISECIError::Json(errors) => {
                 errors.into_iter().map(|e| e.to_string()).collect()
             }
+            RiferimentoNISECIError::JsonArray(error) => {
+                vec![error.to_string()]
+            }
             RiferimentoNISECIError::Value(errors) => {
                 errors.into_iter().map(|e| e.to_string()).collect()
             }
@@ -82,6 +85,9 @@ pub(crate) fn load_json_campionamento_niseci(
         CampionamentoNISECIError::Json(errors) => {
             errors.into_iter().map(|e| e.to_string()).collect()
         }
+        CampionamentoNISECIError::JsonArray(error) => {
+            vec![error.to_string()]
+        }
         CampionamentoNISECIError::Value(errors) => {
             errors.into_iter().map(|e| e.to_string()).collect()
         }
@@ -95,6 +101,9 @@ pub(crate) fn load_json_anagrafica_niseci(anag_str: &str) -> Result<AnagraficaNI
         |ev| match ev {
             AnagraficaNISECIError::Json(errors) => {
                 errors.into_iter().map(|e| e.to_string()).collect()
+            }
+            AnagraficaNISECIError::JsonArray(error) => {
+                vec![error.to_string()]
             }
             AnagraficaNISECIError::Value(errors) => {
                 errors.into_iter().map(|e| e.to_string()).collect()
@@ -113,6 +122,9 @@ pub(crate) fn load_json_campionamento_hfbi(
             CampionamentoHFBIError::Json(errors) => {
                 errors.into_iter().map(|e| e.to_string()).collect()
             }
+            CampionamentoHFBIError::JsonArray(error) => {
+                vec![error.to_string()]
+            }
             CampionamentoHFBIError::Value(errors) => {
                 errors.into_iter().map(|e| e.to_string()).collect()
             }
@@ -126,6 +138,9 @@ pub(crate) fn load_json_anagrafica_hfbi(anag_str: &str) -> Result<AnagraficaHFBI
         |ev| match ev {
             AnagraficaHFBIError::Json(errors) => {
                 errors.into_iter().map(|e| e.to_string()).collect()
+            }
+            AnagraficaHFBIError::JsonArray(error) => {
+                vec![error.to_string()]
             }
             AnagraficaHFBIError::Value(errors) => {
                 errors.into_iter().map(|e| e.to_string()).collect()
