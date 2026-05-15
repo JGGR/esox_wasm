@@ -25,7 +25,11 @@ use esox::csv::load::niseci::{
 };
 use esox::csv::load::InputFormat;
 use esox::domain::hfbi::{AnagraficaHFBI, CampionamentoHFBI};
-use esox::domain::niseci::{AnagraficaNISECI, CampionamentoNISECI, RiferimentoNISECI};
+#[cfg(feature = "lessclone")]
+use esox::domain::niseci::lessclone::CampionamentoNISECI;
+#[cfg(not(feature = "lessclone"))]
+use esox::domain::niseci::CampionamentoNISECI;
+use esox::domain::niseci::{AnagraficaNISECI, RiferimentoNISECI};
 use std::io::Cursor;
 use wasm_bindgen::prelude::*;
 

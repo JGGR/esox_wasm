@@ -27,12 +27,19 @@ use crate::csv::{
 use esox::domain::hfbi::{
     AnagraficaHFBI, CampionamentoHFBI, RisultatoHFBI, StatoEcologicoHFBI, ValoriIntermediHFBI,
 };
-use esox::domain::niseci::{
-    AnagraficaNISECI, AreaNISECI, CampionamentoNISECI, RiferimentoNISECI, RisultatoNISECI,
-    StatoEcologicoNISECI, ValoriIntermediNISECI,
-};
+#[cfg(feature = "lessclone")]
+use esox::domain::niseci::lessclone::{CampionamentoNISECI, RisultatoNISECI};
+use esox::domain::niseci::{AnagraficaNISECI, AreaNISECI, RiferimentoNISECI, StatoEcologicoNISECI};
+#[cfg(not(feature = "lessclone"))]
+use esox::domain::niseci::{CampionamentoNISECI, RisultatoNISECI, ValoriIntermediNISECI};
+
 use esox::engines::hfbi::full::calculate_hfbi;
+
+#[cfg(feature = "lessclone")]
+use esox::engines::niseci::full::lessclone::{calculate_niseci, calculate_rqe_niseci};
+#[cfg(not(feature = "lessclone"))]
 use esox::engines::niseci::full::{calculate_niseci, calculate_rqe_niseci};
+
 use wasm_bindgen::prelude::*;
 
 pub(crate) fn calc_niseci_to_js(
@@ -68,6 +75,8 @@ pub fn calc_niseci_italian(
     calc_niseci_to_js(&campionamento, &riferimento, &anagrafica)
 }
 
+#[cfg(not(feature = "lessclone"))]
+#[deprecated(note = "v0.2 may drop visibility.")]
 #[wasm_bindgen]
 pub fn intermediates_niseci_to_csv(
     intermediates: JsValue,

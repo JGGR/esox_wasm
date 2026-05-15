@@ -1,6 +1,6 @@
 [package]
 name = "esox_wasm"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2021"
 description = "WASM glue library for NISECI and HFBI calc"
 license = "GPL-3.0-only"
@@ -13,11 +13,12 @@ include = [
 [features]
 experimental = [ "esox/experimental" ]
 json = [ "esox/json" ]
+lessclone = [ "esox/lessclone" ]
 
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
-esox = "0.1.5"
+esox = "0.1.6"
 serde-wasm-bindgen = "0.6.5"
-wasm-bindgen = "0.2.106"
+wasm-bindgen = "0.2.121"
