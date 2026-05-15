@@ -68,6 +68,7 @@ pub fn calc_niseci_italian(
     calc_niseci_to_js(&campionamento, &riferimento, &anagrafica)
 }
 
+#[deprecated(note = "v0.2 may drop visibility.")]
 #[wasm_bindgen]
 pub fn intermediates_niseci_to_csv(
     intermediates: JsValue,
