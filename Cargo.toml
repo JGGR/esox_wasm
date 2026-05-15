@@ -13,6 +13,7 @@ include = [
 [features]
 experimental = [ "esox/experimental" ]
 json = [ "esox/json" ]
+lessclone = [ "esox/lessclone" ]
 
 [lib]
 crate-type = ["cdylib"]
