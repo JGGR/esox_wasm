@@ -27,17 +27,13 @@ use crate::csv::{
 use esox::domain::hfbi::{
     AnagraficaHFBI, CampionamentoHFBI, RisultatoHFBI, StatoEcologicoHFBI, ValoriIntermediHFBI,
 };
-#[cfg(feature = "lessclone")]
-use esox::domain::niseci::lessclone::{CampionamentoNISECI, RisultatoNISECI};
-use esox::domain::niseci::{AnagraficaNISECI, AreaNISECI, RiferimentoNISECI, StatoEcologicoNISECI};
-#[cfg(not(feature = "lessclone"))]
-use esox::domain::niseci::{CampionamentoNISECI, RisultatoNISECI, ValoriIntermediNISECI};
+use esox::domain::niseci::{
+    AnagraficaNISECI, AreaNISECI, CampionamentoNISECI, RiferimentoNISECI, RisultatoNISECI,
+    StatoEcologicoNISECI,
+};
 
 use esox::engines::hfbi::full::calculate_hfbi;
 
-#[cfg(feature = "lessclone")]
-use esox::engines::niseci::full::lessclone::{calculate_niseci, calculate_rqe_niseci};
-#[cfg(not(feature = "lessclone"))]
 use esox::engines::niseci::full::{calculate_niseci, calculate_rqe_niseci};
 
 use wasm_bindgen::prelude::*;
@@ -73,19 +69,6 @@ pub fn calc_niseci_italian(
         load_csv_campionamento_niseci(camp_str, &riferimento, is_italian, has_headers)?;
     let anagrafica = load_csv_anagrafica_niseci(anag_str, is_italian, has_headers)?;
     calc_niseci_to_js(&campionamento, &riferimento, &anagrafica)
-}
-
-#[cfg(not(feature = "lessclone"))]
-#[deprecated(note = "v0.2 may drop visibility.")]
-#[wasm_bindgen]
-pub fn intermediates_niseci_to_csv(
-    intermediates: JsValue,
-    comma_csv_delimiter: bool,
-) -> Result<String, JsValue> {
-    let intermediates: ValoriIntermediNISECI = serde_wasm_bindgen::from_value(intermediates)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
-
-    Ok(intermediates.to_csv(comma_csv_delimiter))
 }
 
 #[wasm_bindgen]
