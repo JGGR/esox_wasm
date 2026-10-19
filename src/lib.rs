@@ -14,6 +14,14 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+//! # esox_wasm: NISECI / HFBI WASM computation crate
+//!
+//! esox_wasm parses a custom CSV format and computes two derived indices:
+//! NISECI and HFBI.
+//!
+//! ## Stability
+//!
+//! *Not* stable (yet). Current API surface may change.
 pub(crate) mod csv;
 #[cfg(feature = "experimental")]
 pub mod exper;
@@ -56,6 +64,9 @@ pub(crate) fn calc_niseci_to_js(
     }
 }
 
+/// Main method for NISECI calculation.
+/// Takes the CSV input data as `&str`, so you need to convert it
+/// yourself if needed.
 #[wasm_bindgen]
 pub fn calc_niseci_italian(
     rif_str: &str,
@@ -71,6 +82,10 @@ pub fn calc_niseci_italian(
     calc_niseci_to_js(&campionamento, &riferimento, &anagrafica)
 }
 
+/// Obtain stato_eco string after NISECI calc is done.
+/// Needs, from the JS side:
+/// - [`esox::domain::niseci::RisultatoNISECI`]
+/// - [`esox::domain::niseci::AreaNISECI`]
 #[wasm_bindgen]
 pub fn res_niseci_to_stato_eco_str(res: JsValue, area: JsValue) -> Result<String, JsValue> {
     let risultato: RisultatoNISECI =
@@ -100,6 +115,9 @@ pub(crate) fn calc_hfbi_to_js(
     }
 }
 
+/// Main method for HFBI calculation.
+/// Takes the CSV input data as `&str`, so you need to convert it
+/// yourself if needed.
 #[wasm_bindgen]
 pub fn calc_hfbi_italian(
     camp_str: &str,
@@ -123,6 +141,9 @@ pub fn intermediates_hfbi_to_csv(
     Ok(intermediates.to_csv(comma_csv_delimiter))
 }
 
+/// Obtain stato_eco string after HFBI calc is done.
+/// Needs, from the JS side:
+/// - [`esox::domain::hfbi::RisultatoHFBI`]
 #[wasm_bindgen]
 pub fn res_hfbi_to_stato_eco_str(res: JsValue) -> Result<String, JsValue> {
     let risultato: RisultatoHFBI =
@@ -134,12 +155,14 @@ pub fn res_hfbi_to_stato_eco_str(res: JsValue) -> Result<String, JsValue> {
         .to_string())
 }
 
+/// Get crate version.
 #[wasm_bindgen]
 pub fn get_version() -> String {
     use crate::meta::version;
     version().to_string()
 }
 
+/// Get esox crate version.
 #[wasm_bindgen]
 pub fn get_esox_version() -> String {
     use esox::meta::version;

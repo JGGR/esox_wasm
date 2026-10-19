@@ -14,6 +14,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+//! Experimental features module.
 use crate::{calc_hfbi_to_js, calc_niseci_to_js};
 use esox::domain::hfbi::{AnagraficaHFBI, CampionamentoHFBI, RisultatoHFBI};
 use esox::domain::niseci::{

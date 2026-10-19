@@ -14,6 +14,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+//! Crate metadata.
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn version() -> &'static str {
     VERSION

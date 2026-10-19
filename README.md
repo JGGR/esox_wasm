@@ -17,6 +17,12 @@
 
 This is a WASM glue library for calculating the NISECI and/or HFBI index for a dataset, based on [esox](https://github.com/JGGR/esox).
 
+The methods of calculations follow ISPRA's [specifications](#references).
+
+It supports working with CSV and JSON representations of the input.
+
+A proof-of-concept usage of this library through `npm` is available [here](https://jggr.github.io/esox_web/). (Source code for the repo [here](https://github.com/JGGR/esox_web))
+
 ## Input templates <a name = "input_templates"></a>
 
 You can find templates for the input files in the `templates` folder.

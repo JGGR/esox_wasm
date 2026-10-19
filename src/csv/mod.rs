@@ -14,6 +14,13 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+//! CSV deserialization and validation module.
+//!
+//! Provides support for:
+//!
+//! - Deserialization and fields type check of raw CSV data into typed intermediate structs
+//! - Single-step load ([`esox::csv::deser`] + [`esox::parser`])
+//!   - [`esox::csv::load`]
 use esox::csv::load::hfbi::{
     load_anagrafica_hfbi_from_reader, load_campionamento_hfbi_from_reader, AnagraficaHFBIError,
     CampionamentoHFBIError,
@@ -158,6 +165,7 @@ pub(crate) fn load_csv_campionamento_hfbi(
     )
 }
 
+/// Parse CSV for [`esox::domain::hfbi::CampionamentoHFBI`] and return it to the JS side.
 #[wasm_bindgen]
 pub fn parse_csv_campionamento_hfbi(
     camp_str: &str,
@@ -188,6 +196,7 @@ pub(crate) fn load_csv_anagrafica_hfbi(
     })
 }
 
+/// Parse CSV for [`esox::domain::hfbi::AnagraficaHFBI`] and return it to the JS side.
 #[wasm_bindgen]
 pub fn parse_csv_anagrafica_hfbi(
     anag_str: &str,

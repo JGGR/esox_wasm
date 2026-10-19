@@ -14,6 +14,13 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+//! JSON deserialization and validation module.
+//!
+//! Provides support for:
+//!
+//! - Deserialization and fields type check of raw JSON data into typed intermediate structs
+//! - Single-step load ([`esox::json::deser`] + [`esox::parser`])
+//!   - [`esox::json::load`]
 use crate::{calc_hfbi_to_js, calc_niseci_to_js};
 use esox::deser::{
     PlainRecordAnagraficaHFBI, PlainRecordAnagraficaNISECI, PlainRecordCampionamentoHFBI,
@@ -33,6 +40,9 @@ use esox::json::load::niseci::{
 use std::io::Cursor;
 use wasm_bindgen::prelude::*;
 
+/// Main method for NISECI calculation.
+/// Takes the JSON input data as `&str`, so you need to convert it
+/// yourself if needed.
 #[wasm_bindgen]
 pub fn calc_niseci_json(
     rif_str: &str,
@@ -45,6 +55,9 @@ pub fn calc_niseci_json(
     calc_niseci_to_js(&campionamento, &riferimento, &anagrafica)
 }
 
+/// Main method for HFBI calculation.
+/// Takes the JSON input data as `&str`, so you need to convert it
+/// yourself if needed.
 #[wasm_bindgen]
 pub fn calc_hfbi_json(camp_str: &str, anag_str: &str) -> Result<JsValue, Vec<String>> {
     let campionamento = load_json_campionamento_hfbi(camp_str)?;
