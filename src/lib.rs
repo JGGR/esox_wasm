@@ -67,8 +67,24 @@ pub(crate) fn calc_niseci_to_js(
 /// Main method for NISECI calculation.
 /// Takes the CSV input data as `&str`, so you need to convert it
 /// yourself if needed.
+#[deprecated(note = "Use `calc_niseci` instead.")]
 #[wasm_bindgen]
+#[allow(deprecated)]
 pub fn calc_niseci_italian(
+    rif_str: &str,
+    camp_str: &str,
+    anag_str: &str,
+    is_italian: bool,
+    has_headers: bool,
+) -> Result<JsValue, Vec<String>> {
+    calc_niseci(rif_str, camp_str, anag_str, is_italian, has_headers)
+}
+
+/// Main method for NISECI calculation.
+/// Takes the CSV input data as `&str`, so you need to convert it
+/// yourself if needed.
+#[wasm_bindgen]
+pub fn calc_niseci(
     rif_str: &str,
     camp_str: &str,
     anag_str: &str,
@@ -118,8 +134,23 @@ pub(crate) fn calc_hfbi_to_js(
 /// Main method for HFBI calculation.
 /// Takes the CSV input data as `&str`, so you need to convert it
 /// yourself if needed.
+#[deprecated(note = "Use `calc_hfbi` instead.")]
 #[wasm_bindgen]
+#[allow(deprecated)]
 pub fn calc_hfbi_italian(
+    camp_str: &str,
+    anag_str: &str,
+    is_italian: bool,
+    has_headers: bool,
+) -> Result<JsValue, Vec<String>> {
+    calc_hfbi(camp_str, anag_str, is_italian, has_headers)
+}
+
+/// Main method for HFBI calculation.
+/// Takes the CSV input data as `&str`, so you need to convert it
+/// yourself if needed.
+#[wasm_bindgen]
+pub fn calc_hfbi(
     camp_str: &str,
     anag_str: &str,
     is_italian: bool,
